@@ -5,14 +5,11 @@ import requests
 import hashlib
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
 from datetime import datetime, timedelta
-
 from collections import defaultdict
 
 
 IST = ZoneInfo("Asia/Kolkata")
-
 YEAR = datetime.now(IST).year
 
 META_URL = (
@@ -29,13 +26,13 @@ SUMMARY_URL = (
     f"moviedata/{YEAR}.json"
 )
 
-OUTPUT_DIR = f"{YEAR}/hindi"
 
 MIN_GROSS = 400000
 MIN_SHOWS = 50
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+for y in range(2023, YEAR + 1):
 
+    os.makedirs(f"{y}/hindi", exist_ok=True)
 os.makedirs("data/hindi", exist_ok=True)
 
 
@@ -228,7 +225,7 @@ for movie_key, movie_data in movie_section.items():
 print("Hindi movies found:", len(movies))
 
 generated_files = set()
-year_index = []
+year_indexes = defaultdict(list)
 
 print("Creating output...")
 
@@ -339,7 +336,13 @@ for canonical_name, days_data in movies.items():
 
     slug = slugify(canonical_name)
 
-    output_path = os.path.join(OUTPUT_DIR, f"{slug}.json")
+    release_year = int(release_date[:4])
+
+    output_dir = f"{release_year}/hindi"
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(output_dir, f"{slug}.json")
 
     new_json = json.dumps(output, ensure_ascii=False, separators=(",", ":"))
 
@@ -363,7 +366,9 @@ for canonical_name, days_data in movies.items():
 
                     max_day = day["d"]
 
-            year_index.append({"s": slug, "n": output["tn"], "d": max_day})
+            year_indexes[release_year].append(
+                {"s": slug, "n": output["tn"], "d": max_day}
+            )
             continue
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -386,32 +391,34 @@ for canonical_name, days_data in movies.items():
 
 print("\nCompleted.")
 
-year_index.sort(key=lambda x: x["n"], reverse=True)
+for idx_year, movies in year_indexes.items():
 
-index_path = f"data/hindi/{YEAR}.json"
+    movies.sort(key=lambda x: x["n"], reverse=True)
 
-new_index_json = json.dumps(year_index, ensure_ascii=False, separators=(",", ":"))
+    index_path = f"data/hindi/{idx_year}.json"
 
-write_index = True
+    new_index_json = json.dumps(movies, ensure_ascii=False, separators=(",", ":"))
 
-if os.path.exists(index_path):
+    write_index = True
 
-    with open(index_path, "r", encoding="utf-8") as f:
+    if os.path.exists(index_path):
 
-        old_index_json = f.read()
+        with open(index_path, "r", encoding="utf-8") as f:
 
-    if old_index_json == new_index_json:
+            old_index_json = f.read()
 
-        write_index = False
+        if old_index_json == new_index_json:
 
-        print("Index unchanged")
+            write_index = False
 
-if write_index:
+            print("Index unchanged:", idx_year)
 
-    with open(index_path, "w", encoding="utf-8") as f:
+    if write_index:
 
-        f.write(new_index_json)
+        with open(index_path, "w", encoding="utf-8") as f:
 
-    print("Updated:", index_path)
+            f.write(new_index_json)
 
-print("Output folder:", OUTPUT_DIR)
+        print("Updated:", index_path)
+
+print("\nCompleted.")
