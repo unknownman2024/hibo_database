@@ -8,7 +8,6 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-
 IST = ZoneInfo("Asia/Kolkata")
 YEAR = datetime.now(IST).year
 
@@ -366,8 +365,9 @@ for canonical_name, days_data in movies.items():
 
                     max_day = day["d"]
 
-            year_indexes[release_year].append({"s": slug, "n": output["tn"], "d": max_day})
-            
+            year_indexes[release_year].append(
+                {"s": slug, "n": output["tn"], "d": max_day}
+            )
             continue
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -386,7 +386,7 @@ for canonical_name, days_data in movies.items():
 
             max_day = day["d"]
 
-    year_index.append({"s": slug, "n": output["tn"], "d": max_day})
+    year_indexes[release_year].append({"s": slug, "n": output["tn"], "d": max_day})
 
 print("\nCompleted.")
 
