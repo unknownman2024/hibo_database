@@ -16,7 +16,6 @@ cancel-in-progress: false
 jobs:
 build:
 
-```
 runs-on: ubuntu-latest
 
 timeout-minutes: 30
@@ -57,4 +56,3 @@ steps:
       git pull --rebase origin ${GITHUB_REF_NAME}
 
       git push
-```
