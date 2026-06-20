@@ -664,13 +664,7 @@ for canonical_name, days_data in movies.items():
         f.write(
             new_json
         )
-            f,
-            ensure_ascii=False,
-            separators=(
-                ",",
-                ":"
-            )
-        )
+
 
     print(
         "Saved:",
@@ -683,6 +677,25 @@ for canonical_name, days_data in movies.items():
             output_path
         )
     )
+    
+    
+    max_day = 0
+
+    for day in output["days"]:
+
+        if day["d"] > max_day:
+
+            max_day = day["d"]
+
+    year_index.append({
+
+        "s": slug,
+
+        "n": output["tn"],
+
+        "d": max_day
+
+    })
 
 print(
     "\nCompleted."
