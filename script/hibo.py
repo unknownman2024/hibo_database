@@ -48,6 +48,11 @@ os.makedirs(
     exist_ok=True
 )
 
+os.makedirs(
+    "data/hindi",
+    exist_ok=True
+)
+
 def file_hash(path):
 
     if not os.path.exists(path):
@@ -353,6 +358,7 @@ print(
 )
 
 generated_files = set()
+year_index = []
 
 print(
     "Creating output..."
@@ -626,6 +632,24 @@ for canonical_name, days_data in movies.items():
                 )
             )
 
+
+            max_day = 0
+
+            for day in output["days"]:
+
+                if day["d"] > max_day:
+
+                    max_day = day["d"]
+
+            year_index.append({
+
+                "s": slug,
+
+                "n": output["tn"],
+
+                "d": max_day
+
+            })
             continue
 
   
@@ -663,6 +687,60 @@ for canonical_name, days_data in movies.items():
 print(
     "\nCompleted."
 )
+
+year_index.sort(
+    key=lambda x: x["n"],
+    reverse=True
+)
+
+index_path = (
+    f"data/hindi/{YEAR}.json"
+)
+
+new_index_json = json.dumps(
+    year_index,
+    ensure_ascii=False,
+    separators=(",", ":")
+)
+
+write_index = True
+
+if os.path.exists(
+    index_path
+):
+
+    with open(
+        index_path,
+        "r",
+        encoding="utf-8"
+    ) as f:
+
+        old_index_json = f.read()
+
+    if old_index_json == new_index_json:
+
+        write_index = False
+
+        print(
+            "Index unchanged"
+        )
+
+if write_index:
+
+    with open(
+        index_path,
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(
+            new_index_json
+        )
+
+    print(
+        "Updated:",
+        index_path
+    )
 
 print(
     "Output folder:",
