@@ -366,9 +366,8 @@ for canonical_name, days_data in movies.items():
 
                     max_day = day["d"]
 
-            year_indexes[release_year].append(
-                {"s": slug, "n": output["tn"], "d": max_day}
-            )
+            year_indexes[release_year].append({"s": slug, "n": output["tn"], "d": max_day})
+            
             continue
 
     with open(output_path, "w", encoding="utf-8") as f:
