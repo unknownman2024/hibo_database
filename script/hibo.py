@@ -6,21 +6,14 @@ import hashlib
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from datetime import (
-    datetime,
-    timedelta
-)
+from datetime import datetime, timedelta
 
-from collections import (
-    defaultdict
-)
+from collections import defaultdict
 
 
 IST = ZoneInfo("Asia/Kolkata")
 
-YEAR = datetime.now(
-    IST
-).year
+YEAR = datetime.now(IST).year
 
 META_URL = (
     f"https://cdn.jsdelivr.net/gh/"
@@ -36,94 +29,55 @@ SUMMARY_URL = (
     f"moviedata/{YEAR}.json"
 )
 
-OUTPUT_DIR = (
-    f"{YEAR}/hindi"
-)
+OUTPUT_DIR = f"{YEAR}/hindi"
 
 MIN_GROSS = 400000
 MIN_SHOWS = 50
 
-os.makedirs(
-    OUTPUT_DIR,
-    exist_ok=True
-)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-os.makedirs(
-    "data/hindi",
-    exist_ok=True
-)
+os.makedirs("data/hindi", exist_ok=True)
+
 
 def file_hash(path):
 
     if not os.path.exists(path):
         return None
 
-    with open(
-        path,
-        "rb"
-    ) as f:
+    with open(path, "rb") as f:
 
-        return hashlib.md5(
-            f.read()
-        ).hexdigest()
+        return hashlib.md5(f.read()).hexdigest()
+
 
 def canonical_movie_name(title):
 
     title = title.lower()
 
-    title = re.sub(
-        r"\([^)]*\)",
-        "",
-        title
-    )
+    title = re.sub(r"\([^)]*\)", "", title)
 
-    title = title.replace(
-        "&",
-        "and"
-    )
+    title = title.replace("&", "and")
 
-    title = re.sub(
-        r"['`´]",
-        "",
-        title
-    )
+    title = re.sub(r"['`´]", "", title)
 
-    title = re.sub(
-        r"[^a-z0-9]+",
-        " ",
-        title
-    )
+    title = re.sub(r"[^a-z0-9]+", " ", title)
 
-    title = re.sub(
-        r"\s+",
-        " ",
-        title
-    )
+    title = re.sub(r"\s+", " ", title)
 
     return title.strip()
+
 
 def slugify(text):
 
     text = text.lower()
 
-    text = re.sub(
-        r"[^a-z0-9]+",
-        "-",
-        text
-    )
+    text = re.sub(r"[^a-z0-9]+", "-", text)
 
     return text.strip("-")
 
 
-def get_multiplier(
-    occupancy,
-    shows
-):
+def get_multiplier(occupancy, shows):
 
-    oxs = (
-        occupancy *
-        shows
-    )
+    oxs = occupancy * shows
 
     if oxs >= 300000:
         return 0.93
@@ -140,23 +94,17 @@ def get_multiplier(
     else:
         return 0.90
 
+
 def normalize_title(title):
 
     title = title.lower()
 
-    title = re.sub(
-        r"\([^)]*\)",
-        "",
-        title
-    )
+    title = re.sub(r"\([^)]*\)", "", title)
 
-    title = re.sub(
-        r"[^a-z0-9]+",
-        "",
-        title
-    )
+    title = re.sub(r"[^a-z0-9]+", "", title)
 
     return title
+
 
 def parse_movie_key(key):
 
@@ -168,35 +116,21 @@ def parse_movie_key(key):
     War 2 [IMAX 2D | Hindi]
     """
 
-    m = re.match(
-        r"^(.*?)\s*\[(.*?)\|\s*(.*?)\]$",
-        key
-    )
+    m = re.match(r"^(.*?)\s*\[(.*?)\|\s*(.*?)\]$", key)
 
     if not m:
         return None
 
     movie = m.group(1).strip()
 
-    language = (
-        m.group(3)
-        .strip()
-    )
+    language = m.group(3).strip()
 
-    return (
-        movie,
-        language
-    )
+    return (movie, language)
 
 
-print(
-    "Loading metadata..."
-)
+print("Loading metadata...")
 
-meta_text = requests.get(
-    META_URL,
-    timeout=120
-).text
+meta_text = requests.get(META_URL, timeout=120).text
 
 metadata = {}
 metadata_slug = {}
@@ -210,111 +144,63 @@ for line in meta_text.splitlines():
 
     try:
 
-        obj = json.loads(
-            line
-        )
+        obj = json.loads(line)
 
     except Exception:
         continue
 
-    title = (
-        obj.get("t")
-        or ""
-    ).strip()
+    title = (obj.get("t") or "").strip()
 
     if not title:
         continue
 
-    metadata[
-        normalize_title(title)
-    ] = obj
-    
-    metadata_slug[
-        slugify(title)
-    ] = obj
+    metadata[normalize_title(title)] = obj
 
-print(
-    "Metadata loaded:",
-    len(metadata)
-)
+    metadata_slug[slugify(title)] = obj
 
-print(
-    "Building movie buckets..."
-)
+print("Metadata loaded:", len(metadata))
+
+print("Building movie buckets...")
 
 movie_titles = {}
 movies = defaultdict(
-    lambda: defaultdict(
-        lambda: {
-            "gross": 0,
-            "sold": 0,
-            "shows": 0,
-            "seats": 0
-        }
-    )
+    lambda: defaultdict(lambda: {"gross": 0, "sold": 0, "shows": 0, "seats": 0})
 )
 
 
-print(
-    "Loading yearly data..."
-)
+print("Loading yearly data...")
 
-data = requests.get(
-    SUMMARY_URL,
-    timeout=300
-).json()
+data = requests.get(SUMMARY_URL, timeout=300).json()
 
-movie_section = data.get(
-    "movies",
-    {}
-)
+movie_section = data.get("movies", {})
 
-print(
-    "Movies:",
-    len(movie_section)
-)
+print("Movies:", len(movie_section))
 
 for movie_key, movie_data in movie_section.items():
 
-    parsed = parse_movie_key(
-        movie_key
-    )
+    parsed = parse_movie_key(movie_key)
 
     if not parsed:
         continue
 
     movie_name, language = parsed
 
-    if (
-        language.lower()
-        != "hindi"
-    ):
+    if language.lower() != "hindi":
         continue
 
-    daily = movie_data.get(
-        "daily",
-        {}
-    )
+    daily = movie_data.get("daily", {})
 
     for date_key, row in daily.items():
 
         try:
 
-            gross = float(
-                row[0]
-            )
+            gross = float(row[0])
 
-            sold = float(
-                row[1]
-            )
+            sold = float(row[1])
 
-            shows = float(
-                row[2]
-            )
+            shows = float(row[2])
 
-            occ = float(
-                row[3]
-            )
+            occ = float(row[3])
 
         except Exception:
 
@@ -324,236 +210,116 @@ for movie_key, movie_data in movie_section.items():
 
         if occ > 0:
 
-            seats = (
-                sold /
-                (occ / 100)
-            )
+            seats = sold / (occ / 100)
 
-        canonical_name = (
-            canonical_movie_name(
-                movie_name
-            )
-        )
+        canonical_name = canonical_movie_name(movie_name)
 
         if canonical_name not in movie_titles:
 
-            movie_titles[
-                canonical_name
-            ] = movie_name
+            movie_titles[canonical_name] = movie_name
 
-        bucket = movies[
-            canonical_name
-        ][
-            date_key
-        ]
+        bucket = movies[canonical_name][date_key]
 
         bucket["gross"] += gross
         bucket["sold"] += sold
         bucket["shows"] += shows
         bucket["seats"] += seats
 
-print(
-    "Hindi movies found:",
-    len(movies)
-)
+print("Hindi movies found:", len(movies))
 
 generated_files = set()
 year_index = []
 
-print(
-    "Creating output..."
-)
+print("Creating output...")
 
 for canonical_name, days_data in movies.items():
 
-    movie_name = (
-        movie_titles[
-            canonical_name
-        ]
-    )
+    movie_name = movie_titles[canonical_name]
 
     valid_dates = []
 
     for date_key, day in days_data.items():
 
-        merged_gross = (
-            day["gross"]
-        )
+        merged_gross = day["gross"]
 
-        merged_shows = (
-            day["shows"]
-        )
+        merged_shows = day["shows"]
 
-        if (
-            merged_gross
-            < MIN_GROSS
-        ):
+        if merged_gross < MIN_GROSS:
             continue
 
-        if (
-            merged_shows
-            < MIN_SHOWS
-        ):
+        if merged_shows < MIN_SHOWS:
             continue
 
-        valid_dates.append(
-            date_key
-        )
+        valid_dates.append(date_key)
 
     if not valid_dates:
         continue
 
+    meta = metadata.get(normalize_title(canonical_name))
 
-    meta = metadata.get(
-        normalize_title(
-            canonical_name
-        )
-    )
-    
-    
     if not meta:
-    
-        meta = metadata_slug.get(
-            slugify(
-                canonical_name
-            )
-        )
+
+        meta = metadata_slug.get(slugify(canonical_name))
 
     release_date = None
 
-    if (
-        meta and
-        meta.get("rd")
-    ):
+    if meta and meta.get("rd"):
 
-        release_date = (
-            meta["rd"]
-        )
+        release_date = meta["rd"]
 
     else:
 
-        earliest = min(
-            valid_dates
-        )
+        earliest = min(valid_dates)
 
-        release_date = (
-            datetime.strptime(
-                earliest,
-                "%Y%m%d"
-            ).strftime(
-                "%Y-%m-%d"
-            )
-        )
+        release_date = datetime.strptime(earliest, "%Y%m%d").strftime("%Y-%m-%d")
 
-    rd = datetime.strptime(
-        release_date,
-        "%Y-%m-%d"
-    )
+    rd = datetime.strptime(release_date, "%Y-%m-%d")
 
-
-    has_premieres = (
-        min(valid_dates)
-        <
-        rd.strftime(
-            "%Y%m%d"
-        )
-    )
+    has_premieres = min(valid_dates) < rd.strftime("%Y%m%d")
 
     output = {
-
-        "m":
-            movie_name,
-
-        "rd":
-            release_date,
-        "premiere":
-            has_premieres,
-        "v":
-            1,
-
-        "src":
-            "bfilmyapi"
-
+        "m": movie_name,
+        "rd": release_date,
+        "premiere": has_premieres,
+        "v": 1,
+        "src": "bfilmyapi",
     }
 
     if meta:
 
-        for field in [
-
-            "ec",
-            "img",
-            "og",
-            "d",
-            "g",
-            "l",
-            "rt",
-            "ct"
-
-        ]:
+        for field in ["ec", "img", "og", "d", "g", "l", "rt", "ct"]:
 
             if field in meta:
 
-                output[field] = (
-                    meta[field]
-                )
+                output[field] = meta[field]
 
     output["days"] = []
     total_nett = 0
-    
 
-    for date_key in sorted(
-        valid_dates
-    ):
+    for date_key in sorted(valid_dates):
 
-        day = days_data[
-            date_key
-        ]
+        day = days_data[date_key]
 
-        gross = (
-            day["gross"]
-        )
+        gross = day["gross"]
 
-        sold = (
-            day["sold"]
-        )
+        sold = day["sold"]
 
-        shows = (
-            day["shows"]
-        )
+        shows = day["shows"]
 
-        seats = (
-            day["seats"]
-        )
+        seats = day["seats"]
 
         occupancy = 0
 
         if seats > 0:
 
-            occupancy = (
-                sold /
-                seats
-            ) * 100
+            occupancy = (sold / seats) * 100
 
-        mf = get_multiplier(
-            occupancy,
-            shows
-        )
+        mf = get_multiplier(occupancy, shows)
 
-        nett = round(
-            (
-                gross *
-                mf
-            ) / 10000000,
-            2
-        )
+        nett = round((gross * mf) / 10000000, 2)
         total_nett += nett
 
-        current_day = (
-            datetime.strptime(
-                date_key,
-                "%Y%m%d"
-            )
-        )
+        current_day = datetime.strptime(date_key, "%Y%m%d")
 
         if current_day < rd:
 
@@ -561,77 +327,33 @@ for canonical_name, days_data in movies.items():
 
         else:
 
-            day_no = (
-                current_day -
-                rd
-            ).days + 1
+            day_no = (current_day - rd).days + 1
 
-        output[
-            "days"
-        ].append({
+        output["days"].append({"d": day_no, "n": nett})
 
-            "d":
-                day_no,
+    output["days"].sort(key=lambda x: x["d"])
 
-            "n":
-                nett
-
-        })
-
-
-    output["days"].sort(
-        key=lambda x: x["d"]
-    )
-
-
-    output["tn"] = round(
-        total_nett,
-        2
-    )
+    output["tn"] = round(total_nett, 2)
     if not output["days"]:
         continue
 
-    slug = slugify(
-        canonical_name
-    )
+    slug = slugify(canonical_name)
 
-    output_path = os.path.join(
-        OUTPUT_DIR,
-        f"{slug}.json"
-    )
-    
+    output_path = os.path.join(OUTPUT_DIR, f"{slug}.json")
 
-    new_json = json.dumps(
-        output,
-        ensure_ascii=False,
-        separators=(",", ":")
-    )
+    new_json = json.dumps(output, ensure_ascii=False, separators=(",", ":"))
 
-    if os.path.exists(
-        output_path
-    ):
+    if os.path.exists(output_path):
 
-        with open(
-            output_path,
-            "r",
-            encoding="utf-8"
-        ) as f:
+        with open(output_path, "r", encoding="utf-8") as f:
 
             old_json = f.read()
 
         if old_json == new_json:
 
-            print(
-                "Unchanged:",
-                slug
-            )
+            print("Unchanged:", slug)
 
-            generated_files.add(
-                os.path.abspath(
-                    output_path
-                )
-            )
-
+            generated_files.add(os.path.abspath(output_path))
 
             max_day = 0
 
@@ -641,44 +363,17 @@ for canonical_name, days_data in movies.items():
 
                     max_day = day["d"]
 
-            year_index.append({
-
-                "s": slug,
-
-                "n": output["tn"],
-
-                "d": max_day
-
-            })
+            year_index.append({"s": slug, "n": output["tn"], "d": max_day})
             continue
 
-  
-    
+    with open(output_path, "w", encoding="utf-8") as f:
 
-    with open(
-        output_path,
-        "w",
-        encoding="utf-8"
-    ) as f:
-            
-        f.write(
-            new_json
-        )
+        f.write(new_json)
 
+    print("Saved:", output_path)
 
-    print(
-        "Saved:",
-        output_path
-    )
-    
-    
-    generated_files.add(
-        os.path.abspath(
-            output_path
-        )
-    )
-    
-    
+    generated_files.add(os.path.abspath(output_path))
+
     max_day = 0
 
     for day in output["days"]:
@@ -687,46 +382,21 @@ for canonical_name, days_data in movies.items():
 
             max_day = day["d"]
 
-    year_index.append({
+    year_index.append({"s": slug, "n": output["tn"], "d": max_day})
 
-        "s": slug,
+print("\nCompleted.")
 
-        "n": output["tn"],
+year_index.sort(key=lambda x: x["n"], reverse=True)
 
-        "d": max_day
+index_path = f"data/hindi/{YEAR}.json"
 
-    })
-
-print(
-    "\nCompleted."
-)
-
-year_index.sort(
-    key=lambda x: x["n"],
-    reverse=True
-)
-
-index_path = (
-    f"data/hindi/{YEAR}.json"
-)
-
-new_index_json = json.dumps(
-    year_index,
-    ensure_ascii=False,
-    separators=(",", ":")
-)
+new_index_json = json.dumps(year_index, ensure_ascii=False, separators=(",", ":"))
 
 write_index = True
 
-if os.path.exists(
-    index_path
-):
+if os.path.exists(index_path):
 
-    with open(
-        index_path,
-        "r",
-        encoding="utf-8"
-    ) as f:
+    with open(index_path, "r", encoding="utf-8") as f:
 
         old_index_json = f.read()
 
@@ -734,31 +404,14 @@ if os.path.exists(
 
         write_index = False
 
-        print(
-            "Index unchanged"
-        )
+        print("Index unchanged")
 
 if write_index:
 
-    with open(
-        index_path,
-        "w",
-        encoding="utf-8"
-    ) as f:
+    with open(index_path, "w", encoding="utf-8") as f:
 
-        f.write(
-            new_index_json
-        )
+        f.write(new_index_json)
 
-    print(
-        "Updated:",
-        index_path
-    )
+    print("Updated:", index_path)
 
-print(
-    "Output folder:",
-    OUTPUT_DIR
-)
-
-
-
+print("Output folder:", OUTPUT_DIR)
