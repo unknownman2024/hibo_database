@@ -32,6 +32,8 @@ SUMMARY_URL = (
 
 MIN_GROSS = 100000
 MIN_SHOWS = 50
+FORCE_REBUILD = True
+REBUILD_YEAR = 2026
 
 for y in range(2023, YEAR + 1):
 
@@ -222,8 +224,15 @@ last_updated = (
     or data.get("generated")
     or data.get("timestamp")
 )
-
 print("Last Updated:", last_updated)
+
+
+LAST_UPDATED = (
+    last_updated
+    or datetime.now(IST).strftime(
+        "%Y-%m-%d %H:%M IST"
+    )
+)
 
 if "movies" in data:
     print("Movie Count:", len(data["movies"]))
@@ -461,7 +470,14 @@ for canonical_name, days_data in movies.items():
 
             old_json = f.read()
 
-        if old_json == new_json:
+        if (
+            old_json == new_json
+            and not (
+                FORCE_REBUILD
+                and release_year == REBUILD_YEAR
+            )
+        ):
+        
 
             print("Unchanged:", slug)
 
@@ -530,7 +546,17 @@ for idx_year, movies in year_indexes.items():
 
     index_path = f"data/hindi/{idx_year}.json"
 
-    new_index_json = json.dumps(movies, ensure_ascii=False, separators=(",", ":"))
+
+    index_payload = {
+        "last_updated": LAST_UPDATED,
+        "movies": movies,
+    }
+    
+    new_index_json = json.dumps(
+        index_payload,
+        ensure_ascii=False,
+        separators=(",", ":")
+    )
 
     write_index = True
 
