@@ -11,6 +11,7 @@ from collections import defaultdict
 IST = ZoneInfo("Asia/Kolkata")
 YEAR = datetime.now(IST).year
 TS = int(datetime.now(IST).timestamp())
+TODAY_IST = datetime.now(IST).strftime("%Y%m%d")
 
 META_URL = (
     f"https://raw.githubusercontent.com/"
@@ -48,8 +49,6 @@ MANUAL_FIELDS = [
     "tos",
     "vd",
 ]
-
-TODAY_IST = datetime.now(IST).strftime("%Y%m%d")
 
 
 def round05(v):
@@ -337,6 +336,10 @@ for canonical_name, days_data in movies.items():
 
     has_premieres = min(valid_dates) < rd.strftime("%Y%m%d")
 
+    slug = slugify(canonical_name)
+
+    release_year = int(release_date[:4])
+
     output = {
         "m": movie_name,
         "rd": release_date,
@@ -353,6 +356,26 @@ for canonical_name, days_data in movies.items():
 
                 output[field] = meta[field]
 
+    output_dir = f"{release_year}/hindi"
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(output_dir, f"{slug}.json")
+
+    existing_data = {}
+
+    if os.path.exists(output_path):
+
+        try:
+
+            with open(output_path, "r", encoding="utf-8") as f:
+
+                existing_data = json.load(f)
+
+        except Exception:
+
+            existing_data = {}
+
     manual_days = {}
 
     if existing_data.get("days"):
@@ -368,6 +391,7 @@ for canonical_name, days_data in movies.items():
     output["days"] = []
     total_nett = 0
 
+    latest_date_key = max(valid_dates)
     for date_key in sorted(valid_dates):
 
         day = days_data[date_key]
@@ -389,7 +413,6 @@ for canonical_name, days_data in movies.items():
         mf = get_multiplier(occupancy, shows)
 
         nett = round05((gross * mf) / 10000000)
-        total_nett += nett
 
         current_day = datetime.strptime(date_key, "%Y%m%d")
 
@@ -401,9 +424,9 @@ for canonical_name, days_data in movies.items():
 
             day_no = (current_day - rd).days + 1
 
-        is_today = date_key == TODAY_IST
+        is_latest_source_day = date_key == latest_date_key
 
-        if day_no in manual_days and not is_today:
+        if day_no in manual_days and not is_latest_source_day:
             final_nett = manual_days[day_no].get("n", nett)
         else:
             final_nett = nett
@@ -413,6 +436,9 @@ for canonical_name, days_data in movies.items():
         output["days"].append({"d": day_no, "n": final_nett})
 
     output["days"].sort(key=lambda x: x["d"])
+
+    if not output["days"]:
+        continue
 
     output["tn"] = round05(total_nett)
 
@@ -425,33 +451,6 @@ for canonical_name, days_data in movies.items():
         else:
 
             output[field] = "" if field == "vd" else 0
-
-    if not output["days"]:
-        continue
-
-    slug = slugify(canonical_name)
-
-    release_year = int(release_date[:4])
-
-    output_dir = f"{release_year}/hindi"
-
-    os.makedirs(output_dir, exist_ok=True)
-
-    output_path = os.path.join(output_dir, f"{slug}.json")
-
-    existing_data = {}
-
-    if os.path.exists(output_path):
-
-        try:
-
-            with open(output_path, "r", encoding="utf-8") as f:
-
-                existing_data = json.load(f)
-
-        except Exception:
-
-            existing_data = {}
 
     new_json = json.dumps(output, ensure_ascii=False, separators=(",", ":"))
 
