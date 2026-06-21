@@ -40,6 +40,49 @@ for y in range(2023, YEAR + 1):
     os.makedirs(f"{y}/hindi", exist_ok=True)
 os.makedirs("data/hindi", exist_ok=True)
 
+FORCE_YEAR_MAP = {}
+
+force_year_path = (
+    "data/hindi/forceyear_merged.json"
+)
+
+if os.path.exists(force_year_path):
+
+    try:
+
+        with open(
+            force_year_path,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            for row in json.load(f):
+
+                slug = row.get("s")
+
+                fy = row.get("fy")
+
+                if (
+                    slug
+                    and fy
+                ):
+
+                    FORCE_YEAR_MAP[
+                        slug
+                    ] = int(fy)
+
+        print(
+            "Force year entries:",
+            len(FORCE_YEAR_MAP)
+        )
+
+    except Exception as e:
+
+        print(
+            "Failed loading forceyear:",
+            e
+        )
+
 from decimal import Decimal, ROUND_HALF_UP
 
 MANUAL_FIELDS = [
@@ -350,11 +393,18 @@ for canonical_name, days_data in movies.items():
     has_premieres = min(valid_dates) < rd.strftime("%Y%m%d")
 
     slug = slugify(canonical_name)
-
-    release_year = int(release_date[:4])
     
-
-
+    release_year = FORCE_YEAR_MAP.get(
+        slug,
+        int(release_date[:4])
+    )
+    
+    if slug in FORCE_YEAR_MAP:
+    
+        print(
+            f"FORCED YEAR: {slug} -> {release_year}"
+        )
+    
     output = {
         "m": movie_name,
         "rd": release_date,
