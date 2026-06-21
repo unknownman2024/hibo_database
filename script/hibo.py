@@ -37,6 +37,27 @@ for y in range(2023, YEAR + 1):
     os.makedirs(f"{y}/hindi", exist_ok=True)
 os.makedirs("data/hindi", exist_ok=True)
 
+from decimal import Decimal, ROUND_HALF_UP
+
+MANUAL_FIELDS = [
+    "d1os",
+    "d2os",
+    "d3os",
+    "d4os",
+    "wos",
+    "tos",
+    "vd",
+]
+
+TODAY_IST = datetime.now(IST).strftime("%Y%m%d")
+
+
+def round05(v):
+    return float(
+        (Decimal(str(v)) * 20).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        / Decimal("20")
+    )
+
 
 def file_hash(path):
 
@@ -131,10 +152,12 @@ print("Loading metadata...")
 
 session = requests.Session()
 
-session.headers.update({
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-})
+session.headers.update(
+    {
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
+)
 
 meta_resp = session.get(META_URL, timeout=120)
 
@@ -143,10 +166,7 @@ meta_resp.raise_for_status()
 meta_text = meta_resp.text
 
 print("META SIZE:", len(meta_text))
-print(
-    "META HASH:",
-    hashlib.md5(meta_text.encode()).hexdigest()
-)
+print("META HASH:", hashlib.md5(meta_text.encode()).hexdigest())
 
 metadata = {}
 metadata_slug = {}
@@ -186,20 +206,12 @@ movies = defaultdict(
 
 print("Loading yearly data...")
 
-summary_resp = session.get(
-    SUMMARY_URL,
-    timeout=300
-)
+summary_resp = session.get(SUMMARY_URL, timeout=300)
 
 summary_resp.raise_for_status()
 
 print("SUMMARY SIZE:", len(summary_resp.text))
-print(
-    "SUMMARY HASH:",
-    hashlib.md5(
-        summary_resp.text.encode()
-    ).hexdigest()
-)
+print("SUMMARY HASH:", hashlib.md5(summary_resp.text.encode()).hexdigest())
 
 data = summary_resp.json()
 print("\n=== SOURCE INFO ===")
@@ -341,6 +353,18 @@ for canonical_name, days_data in movies.items():
 
                 output[field] = meta[field]
 
+    manual_days = {}
+
+    if existing_data.get("days"):
+
+        for d in existing_data["days"]:
+
+            day_no = d.get("d")
+
+            if day_no is not None:
+
+                manual_days[day_no] = d
+
     output["days"] = []
     total_nett = 0
 
@@ -364,7 +388,7 @@ for canonical_name, days_data in movies.items():
 
         mf = get_multiplier(occupancy, shows)
 
-        nett = round((gross * mf) / 10000000, 2)
+        nett = round05((gross * mf) / 10000000)
         total_nett += nett
 
         current_day = datetime.strptime(date_key, "%Y%m%d")
@@ -377,11 +401,31 @@ for canonical_name, days_data in movies.items():
 
             day_no = (current_day - rd).days + 1
 
-        output["days"].append({"d": day_no, "n": nett})
+        is_today = date_key == TODAY_IST
+
+        if day_no in manual_days and not is_today:
+            final_nett = manual_days[day_no].get("n", nett)
+        else:
+            final_nett = nett
+
+        total_nett += final_nett
+
+        output["days"].append({"d": day_no, "n": final_nett})
 
     output["days"].sort(key=lambda x: x["d"])
 
-    output["tn"] = round(total_nett, 2)
+    output["tn"] = round05(total_nett)
+
+    for field in MANUAL_FIELDS:
+
+        if field in existing_data:
+
+            output[field] = existing_data[field]
+
+        else:
+
+            output[field] = "" if field == "vd" else 0
+
     if not output["days"]:
         continue
 
@@ -394,6 +438,20 @@ for canonical_name, days_data in movies.items():
     os.makedirs(output_dir, exist_ok=True)
 
     output_path = os.path.join(output_dir, f"{slug}.json")
+
+    existing_data = {}
+
+    if os.path.exists(output_path):
+
+        try:
+
+            with open(output_path, "r", encoding="utf-8") as f:
+
+                existing_data = json.load(f)
+
+        except Exception:
+
+            existing_data = {}
 
     new_json = json.dumps(output, ensure_ascii=False, separators=(",", ":"))
 
@@ -418,7 +476,18 @@ for canonical_name, days_data in movies.items():
                     max_day = day["d"]
 
             year_indexes[release_year].append(
-                {"s": slug, "n": output["tn"], "d": max_day}
+                {
+                    "s": slug,
+                    "n": output["tn"],
+                    "d": max_day,
+                    "d1os": output.get("d1os", 0),
+                    "d2os": output.get("d2os", 0),
+                    "d3os": output.get("d3os", 0),
+                    "d4os": output.get("d4os", 0),
+                    "wos": output.get("wos", 0),
+                    "tos": output.get("tos", 0),
+                    "vd": output.get("vd", ""),
+                }
             )
             continue
 
@@ -438,7 +507,20 @@ for canonical_name, days_data in movies.items():
 
             max_day = day["d"]
 
-    year_indexes[release_year].append({"s": slug, "n": output["tn"], "d": max_day})
+    year_indexes[release_year].append(
+        {
+            "s": slug,
+            "n": output["tn"],
+            "d": max_day,
+            "d1os": output.get("d1os", 0),
+            "d2os": output.get("d2os", 0),
+            "d3os": output.get("d3os", 0),
+            "d4os": output.get("d4os", 0),
+            "wos": output.get("wos", 0),
+            "tos": output.get("tos", 0),
+            "vd": output.get("vd", ""),
+        }
+    )
 
 print("\nCompleted.")
 
