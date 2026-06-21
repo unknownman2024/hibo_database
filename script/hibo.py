@@ -390,8 +390,9 @@ for canonical_name, days_data in movies.items():
 
     output["days"] = []
     total_nett = 0
-
-    latest_date_key = max(valid_dates)
+    
+    # latest source day irrespective of filters
+    latest_date_key = max(days_data.keys())
     for date_key in sorted(valid_dates):
 
         day = days_data[date_key]
