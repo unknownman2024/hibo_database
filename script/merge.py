@@ -129,12 +129,14 @@ for slug, paths in slug_map.items():
                 day
             )
 
-    # de-duplicate identical days
+    # prefer dt when available,
+    # otherwise use run day
+    
     seen = {}
     
     for day in merged_days:
     
-        if "dt" in day:
+        if day.get("dt"):
     
             key = (
                 "dt",
@@ -148,8 +150,17 @@ for slug, paths in slug_map.items():
                 day.get("d", 0)
             )
     
-        # keep latest copy
-        seen[key] = day
+        # prefer record containing dt
+        if key not in seen:
+    
+            seen[key] = day
+    
+        elif (
+            "dt" in day
+            and "dt" not in seen[key]
+        ):
+    
+            seen[key] = day
     
     merged_days = list(
         seen.values()
