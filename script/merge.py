@@ -129,34 +129,62 @@ for slug, paths in slug_map.items():
                 day
             )
 
-    merged_days.sort(
-        key=lambda x:
-        x.get("d", 0)
-    )
-
-    new_days = []
-
-    day_no = 1
-
+    # de-duplicate identical days
+    seen = {}
+    
     for day in merged_days:
-
+    
+        if "dt" in day:
+    
+            key = (
+                "dt",
+                day["dt"]
+            )
+    
+        else:
+    
+            key = (
+                "d",
+                day.get("d", 0)
+            )
+    
+        # keep latest copy
+        seen[key] = day
+    
+    merged_days = list(
+        seen.values()
+    )
+    
+    merged_days.sort(
+        key=lambda x: (
+            x.get("dt", 0),
+            x.get("d", 0)
+        )
+    )
+    
+    new_days = []
+    
+    day_no = 1
+    
+    for day in merged_days:
+    
         new_day = dict(day)
-
+    
         new_day["d"] = day_no
-
+    
         day_no += 1
-
+    
         new_days.append(
             new_day
         )
-
+    
         total_nett += (
             day.get(
                 "n",
                 0
             ) or 0
         )
-
+    
         total_gross += (
             day.get(
                 "g",
@@ -195,13 +223,18 @@ for slug, paths in slug_map.items():
         output
     )
 
+    print(
+        "KEEP:",
+        base_path
+    )
+    
     for path, _ in files[1:]:
-
+    
         print(
-            "Deleting",
+            "DELETE:",
             path
         )
-
+    
         os.remove(
             path
         )
