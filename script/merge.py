@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 
 YEARS = [2023, 2024, 2025, 2026]
+FORCE_YEAR = []
 
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
@@ -81,6 +82,15 @@ for slug, paths in slug_map.items():
     )
 
     base_path, base = files[0]
+    
+    base_year = int(
+        base_path.split("/")[0]
+    )
+    
+    force_movie_name = (
+        base.get("m")
+        or slug.replace("-", " ").title()
+    )
 
     merged_days = []
 
@@ -228,6 +238,15 @@ for slug, paths in slug_map.items():
             total_gross,
             2
         )
+        
+        
+    FORCE_YEAR.append(
+        {
+            "s": slug,
+            "m": force_movie_name,
+            "fy": base_year
+        }
+    )
 
     save_json(
         base_path,
@@ -249,6 +268,24 @@ for slug, paths in slug_map.items():
         os.remove(
             path
         )
+
+
+os.makedirs(
+    "data/hindi",
+    exist_ok=True
+)
+
+save_json(
+    "data/hindi/forceyear_merged.json",
+    sorted(
+        FORCE_YEAR,
+        key=lambda x: x["m"].lower()
+    )
+)
+
+print(
+    "Saved: data/hindi/forceyear_merged.json"
+)
 
 print(
     "Merge completed"
