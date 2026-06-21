@@ -342,9 +342,6 @@ for movie_key, movie_data in movie_section.items():
 
 print("Hindi movies found:", len(movies))
 
-generated_files = set()
-year_indexes = defaultdict(list)
-
 print("Creating output...")
 
 for canonical_name, days_data in movies.items():
@@ -536,31 +533,6 @@ for canonical_name, days_data in movies.items():
         
 
             print("Unchanged:", slug)
-
-            generated_files.add(os.path.abspath(output_path))
-
-            max_day = 0
-
-            for day in output["days"]:
-
-                if day["d"] > max_day:
-
-                    max_day = day["d"]
-
-            year_indexes[release_year].append(
-                {
-                    "s": slug,
-                    "n": output["tn"],
-                    "d": max_day,
-                    "d1os": output.get("d1os", 0),
-                    "d2os": output.get("d2os", 0),
-                    "d3os": output.get("d3os", 0),
-                    "d4os": output.get("d4os", 0),
-                    "wos": output.get("wos", 0),
-                    "tos": output.get("tos", 0),
-                    "vd": output.get("vd", ""),
-                }
-            )
             continue
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -568,31 +540,6 @@ for canonical_name, days_data in movies.items():
         f.write(new_json)
 
     print("Saved:", output_path)
-
-    generated_files.add(os.path.abspath(output_path))
-
-    max_day = 0
-
-    for day in output["days"]:
-
-        if day["d"] > max_day:
-
-            max_day = day["d"]
-
-    year_indexes[release_year].append(
-        {
-            "s": slug,
-            "n": output["tn"],
-            "d": max_day,
-            "d1os": output.get("d1os", 0),
-            "d2os": output.get("d2os", 0),
-            "d3os": output.get("d3os", 0),
-            "d4os": output.get("d4os", 0),
-            "wos": output.get("wos", 0),
-            "tos": output.get("tos", 0),
-            "vd": output.get("vd", ""),
-        }
-    )
 
 print("\nCompleted.")
 
@@ -645,6 +592,10 @@ for idx_year in range(2023, YEAR + 1):
         movies.append(
             {
                 "s": filename[:-5],
+                "m": movie.get(
+                    "m",
+                    ""
+                ),
                 "n": movie.get(
                     "tn",
                     0
