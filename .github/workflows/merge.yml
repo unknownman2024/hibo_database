@@ -15,7 +15,6 @@ merge:
 runs-on: ubuntu-latest
 timeout-minutes: 15
 
-```
 steps:
   - name: Checkout
     uses: actions/checkout@v4
@@ -51,4 +50,3 @@ steps:
       git pull --rebase origin "${GITHUB_REF_NAME}"
 
       git push
-```
