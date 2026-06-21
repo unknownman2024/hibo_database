@@ -13,17 +13,17 @@ YEAR = datetime.now(IST).year
 TS = int(datetime.now(IST).timestamp())
 
 META_URL = (
-    f"https://cdn.jsdelivr.net/gh/"
+    f"https://raw.githubusercontent.com/"
     f"text2027mail/"
-    f"bms-movies-data@refs/heads/main/"
+    f"bms-movies-data/refs/heads/main/"
     f"data/{YEAR}.json"
     f"?ts={TS}"
 )
 
 SUMMARY_URL = (
-    f"https://cdn.jsdelivr.net/gh/"
+    f"https://raw.githubusercontent.com/"
     f"unknownman2024/"
-    f"yearlydata@refs/heads/main/"
+    f"yearlydata/refs/heads/main/"
     f"moviedata/{YEAR}.json"
     f"?ts={TS}"
 )
@@ -129,7 +129,24 @@ def parse_movie_key(key):
 
 print("Loading metadata...")
 
-meta_text = requests.get(META_URL, timeout=120).text
+session = requests.Session()
+
+session.headers.update({
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+})
+
+meta_resp = session.get(META_URL, timeout=120)
+
+meta_resp.raise_for_status()
+
+meta_text = meta_resp.text
+
+print("META SIZE:", len(meta_text))
+print(
+    "META HASH:",
+    hashlib.md5(meta_text.encode()).hexdigest()
+)
 
 metadata = {}
 metadata_slug = {}
@@ -169,7 +186,39 @@ movies = defaultdict(
 
 print("Loading yearly data...")
 
-data = requests.get(SUMMARY_URL, timeout=300).json()
+summary_resp = session.get(
+    SUMMARY_URL,
+    timeout=300
+)
+
+summary_resp.raise_for_status()
+
+print("SUMMARY SIZE:", len(summary_resp.text))
+print(
+    "SUMMARY HASH:",
+    hashlib.md5(
+        summary_resp.text.encode()
+    ).hexdigest()
+)
+
+data = summary_resp.json()
+print("\n=== SOURCE INFO ===")
+
+last_updated = (
+    data.get("lastUpdated")
+    or data.get("updated")
+    or data.get("last_updated")
+    or data.get("generated")
+    or data.get("timestamp")
+)
+
+print("Last Updated:", last_updated)
+
+if "movies" in data:
+    print("Movie Count:", len(data["movies"]))
+
+print("===================\n")
+
 
 movie_section = data.get("movies", {})
 
