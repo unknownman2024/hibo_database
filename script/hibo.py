@@ -54,11 +54,19 @@ MANUAL_FIELDS = [
 
 
 def round05(v):
-    return float(
-        (Decimal(str(v)) * 20).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        / Decimal("20")
-    )
 
+    # keep small values untouched
+    if v < 0.5:
+        return round(v, 2)
+
+    return float(
+        (
+            Decimal(str(v)) * 20
+        ).quantize(
+            Decimal("1"),
+            rounding=ROUND_HALF_UP
+        ) / Decimal("20")
+    )
 
 def file_hash(path):
 
@@ -226,12 +234,8 @@ last_updated = (
 )
 print("Last Updated:", last_updated)
 
-
-LAST_UPDATED = (
-    last_updated
-    or datetime.now(IST).strftime(
-        "%Y-%m-%d %H:%M IST"
-    )
+LAST_UPDATED = datetime.now(IST).strftime(
+    "%Y-%m-%d %H:%M IST"
 )
 
 if "movies" in data:
