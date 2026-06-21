@@ -10,12 +10,14 @@ from collections import defaultdict
 
 IST = ZoneInfo("Asia/Kolkata")
 YEAR = datetime.now(IST).year
+TS = int(datetime.now(IST).timestamp())
 
 META_URL = (
     f"https://cdn.jsdelivr.net/gh/"
     f"text2027mail/"
     f"bms-movies-data@refs/heads/main/"
     f"data/{YEAR}.json"
+    f"?ts={TS}"
 )
 
 SUMMARY_URL = (
@@ -23,6 +25,7 @@ SUMMARY_URL = (
     f"unknownman2024/"
     f"yearlydata@refs/heads/main/"
     f"moviedata/{YEAR}.json"
+    f"?ts={TS}"
 )
 
 
