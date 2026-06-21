@@ -32,8 +32,8 @@ SUMMARY_URL = (
 
 MIN_GROSS = 100000
 MIN_SHOWS = 20
-FORCE_REBUILD = False
-REBUILD_YEAR = 2000
+FORCE_REBUILD = True
+REBUILD_YEAR = 2026
 
 for y in range(2023, YEAR + 1):
 
@@ -352,6 +352,8 @@ for canonical_name, days_data in movies.items():
     slug = slugify(canonical_name)
 
     release_year = int(release_date[:4])
+    
+
 
     output = {
         "m": movie_name,
@@ -447,7 +449,7 @@ for canonical_name, days_data in movies.items():
 
         total_nett += final_nett
 
-        output["days"].append({"d": day_no, "n": final_nett})
+        output["days"].append({"d": day_no, "dt": int(date_key), "n": final_nett})
 
     output["days"].sort(key=lambda x: x["d"])
 
