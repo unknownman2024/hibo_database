@@ -30,7 +30,7 @@ SUMMARY_URL = (
 )
 
 
-MIN_GROSS = 400000
+MIN_GROSS = 100000
 MIN_SHOWS = 50
 
 for y in range(2023, YEAR + 1):
